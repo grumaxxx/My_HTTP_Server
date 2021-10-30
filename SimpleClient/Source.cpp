@@ -54,7 +54,10 @@ int main(int argc, char* argv[]) {
 //	while(true) {
 		send(Connection, hello1, strlen(hello1), NULL);
 		//std::cout << "send hello1\n" << std::endl;
-		send(Connection2, hello2, strlen(hello2), NULL);
+		// 
+		recv(Connection, buff, 512, NULL);
+
+		//send(Connection2, hello2, strlen(hello2), NULL);
 
 		//std::cout << "send hello2\n" << std::endl;
 //	}

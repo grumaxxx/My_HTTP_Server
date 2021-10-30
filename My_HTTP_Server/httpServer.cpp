@@ -27,12 +27,12 @@ httpServer::httpServer(uint16_t port) :
 	if (this->mybind() == -1) {
 		throw std::runtime_error(strerror(errno));
 	}
-    
+    // Create five threads and add them a dispatch handler
     for (size_t i = 0; i < _threads.size(); i++)
     {
         _threads[i] = std::thread(&httpServer::dispatch_thread_handler, this);
     }
-
+    //Listen port
     int result = listen(_socket, SOMAXCONN);
     if (result < 0) {
         throw std::runtime_error("Failed to listen port");
@@ -77,7 +77,6 @@ size_t httpServer::mysend(std::array<char, MAX_SIZE>& buf, size_t len)
     if (len >= buf.size()) {
         throw std::out_of_range("len >= buf.size()");
     }
-
     return send(
         _client,
         buf.data(),
@@ -86,14 +85,24 @@ size_t httpServer::mysend(std::array<char, MAX_SIZE>& buf, size_t len)
     );
 }
 
+void httpServer::sendOK(int sock)
+{
+    std::string response = "HTTP/1.1 200 OK\r\n";
+    send(sock, response.c_str(), response.size(), NULL);
+}
+
 httpData httpServer::parseHttpReq(std::array<char, MAX_SIZE>& buf)
 {
+    // Create string from array of char
     std::string str(buf.begin(), buf.end());
+    // Check if it is GET request
     if (str.substr(0, 3) == "GET") {
-
+        // Simple example, when we doesn't have anything after user-agend header
         std::string user_agent = str.substr(str.find("user-agent") + 12);
+        // Request addr is betwen GET and HTTP/1.1
         auto httpVer = str.find("HTTP/1.1");
         std::string addr = str.substr(4, httpVer - 5);
+        //Create pack of http data to check sum and cout it to console
         httpData pack{ _client, addr, user_agent };
 
         return pack;
@@ -131,13 +140,12 @@ void httpServer::process()
 
     //}
 
-
+    //Wait a socket request to connect
     while (_client = acceptConnection()) {
         if (auto len = myrecv(buf); len != 0) {
             //SEND 200 OK
-            // 
-            // 
-            //Обработка запроса
+            sendOK(_client);
+            //Request handler
             dispatch(parseHttpReq(buf));
         }
         else {
@@ -149,6 +157,7 @@ void httpServer::process()
 void httpServer::dispatch(const httpData& data)
 {
     std::unique_lock<std::mutex> lock(_lock);
+    // add httpData to queue
     _q.push(data);
     lock.unlock();
     _cv.notify_one();
@@ -157,6 +166,7 @@ void httpServer::dispatch(const httpData& data)
 void httpServer::dispatch(httpData&& data)
 {
     std::unique_lock<std::mutex> lock(_lock);
+    // add httpData to queue. if it's rvalue data, we can move it to queue
     _q.push(std::move(data));
     lock.unlock();
     _cv.notify_one();
@@ -167,6 +177,7 @@ void httpServer::dispatch_thread_handler()
     std::unique_lock<std::mutex> lock(_lock);
     do
     {
+        // Wait elements in queue
          _cv.wait(lock, [this] {
             return (_q.size() || _quit);
             });
@@ -178,6 +189,7 @@ void httpServer::dispatch_thread_handler()
 
             lock.unlock();
             
+            //Ckeck sum of user-agent and address
             SHA1 head_checksum;
             SHA1 userAgent_checksum;
             head_checksum.update(data._head);
@@ -204,7 +216,7 @@ httpServer::~httpServer() {
     _quit = true;
     lock.unlock();
     _cv.notify_all();
-
+    // Join all active sockets
     for (size_t i = 0; i < _threads.size(); i++)
     {
         if (_threads[i].joinable())

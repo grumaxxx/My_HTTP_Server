@@ -31,6 +31,7 @@ public:
 	size_t mybind();
 	size_t myrecv(std::array<char, MAX_SIZE>& buf);
 	size_t mysend(std::array<char, MAX_SIZE>& buf, size_t len);
+	void sendOK(int sock);
 	httpData parseHttpReq(std::array<char, MAX_SIZE>& buf);
 	void process();
 
