@@ -27,6 +27,7 @@ class httpServer
 public:
 
 	explicit httpServer(uint16_t port);
+	size_t acceptConnection();
 	size_t mybind();
 	size_t myrecv(std::array<char, MAX_SIZE>& buf);
 	size_t mysend(std::array<char, MAX_SIZE>& buf, size_t len);
@@ -48,5 +49,6 @@ private:
 	int _client{};
 	int _socket{};
 
+	fd_set master;
 };
 

@@ -3,7 +3,7 @@
 #include <condition_variable>
 #include <thread>
 #include <functional>
-
+#include "SHA1.h"
 
 httpServer::httpServer(uint16_t port) :
     _threads(5)
@@ -27,12 +27,29 @@ httpServer::httpServer(uint16_t port) :
 	if (this->mybind() == -1) {
 		throw std::runtime_error(strerror(errno));
 	}
-    listen(_socket, SOMAXCONN);
     
     for (size_t i = 0; i < _threads.size(); i++)
     {
         _threads[i] = std::thread(&httpServer::dispatch_thread_handler, this);
     }
+
+    int result = listen(_socket, SOMAXCONN);
+    if (result < 0) {
+        throw std::runtime_error("Failed to listen port");
+    }
+
+    //master;
+    //FD_ZERO(&master);
+    //FD_SET(_socket, &master);
+}
+
+size_t httpServer::acceptConnection()
+{
+    int newSock = accept(_socket, NULL, 0);
+    if (_client < 0) {
+        throw std::runtime_error("Failed to accept port");
+    }
+    return newSock;
 }
 
 size_t httpServer::mybind()
@@ -73,10 +90,11 @@ httpData httpServer::parseHttpReq(std::array<char, MAX_SIZE>& buf)
 {
     std::string str(buf.begin(), buf.end());
     if (str.substr(0, 3) == "GET") {
+
         std::string user_agent = str.substr(str.find("user-agent") + 12);
         auto httpVer = str.find("HTTP/1.1");
-        std::string addr = str.substr(4, httpVer - 4);
-        httpData pack{ _socket, addr, user_agent };
+        std::string addr = str.substr(4, httpVer - 5);
+        httpData pack{ _client, addr, user_agent };
 
         return pack;
     }
@@ -84,10 +102,37 @@ httpData httpServer::parseHttpReq(std::array<char, MAX_SIZE>& buf)
 
 void httpServer::process()
 {
+    std::array<char, MAX_SIZE> buf{};
 
-    while (_client = accept(_socket, NULL, 0)) {
-        std::array<char, MAX_SIZE> buf{};
+    //while (1) {
+    //    fd_set copy = master;
 
+    //    // See who's talking to us
+    //    int socketCount = select(_socket + 1, &copy, nullptr, nullptr, nullptr);
+
+    //    // Loop through all the current connections / potential connect
+    //    for (int i = 0; i < socketCount; i++)
+    //    { 
+    //        // Makes things easy for us doing this assignment
+    //        SOCKET sock = copy.fd_array[i];
+
+    //        // Is it an inbound communication?
+    //        if (sock == _socket)
+    //        {
+    //            _client = waitForConnection();
+    //            myrecv(buf);
+    //            dispatch(parseHttpReq(buf));
+    //        }
+    //        else {
+    //            myrecv(buf);
+    //            dispatch(parseHttpReq(buf));
+    //        }
+    //    }
+
+    //}
+
+
+    while (_client = acceptConnection()) {
         if (auto len = myrecv(buf); len != 0) {
             //SEND 200 OK
             // 
@@ -132,9 +177,22 @@ void httpServer::dispatch_thread_handler()
             _q.pop();
 
             lock.unlock();
+            
+            SHA1 head_checksum;
+            SHA1 userAgent_checksum;
+            head_checksum.update(data._head);
+            const std::string head_hash = head_checksum.final();
+            userAgent_checksum.update(data._userAgent);
+            const std::string user_hash = userAgent_checksum.final();
 
-            //do something with data from queue
-            // Parse and get SHA1
+            std::cout
+                << '<' << std::this_thread::get_id << '>'
+                << '<' << data._head << '>'
+                << '<' << head_hash << '>'
+                << '<' << data._sock_addr << '>'
+                << '<' << data._userAgent << '>'
+                << '<' << user_hash << '>'
+                << std::endl;
 
             lock.lock();
         }

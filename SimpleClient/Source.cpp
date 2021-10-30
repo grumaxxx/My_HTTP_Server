@@ -14,8 +14,11 @@ int main(int argc, char* argv[]) {
 
 	char buff[512];
 
-	const char* hello = "GET /AdGuard/test.html HTTP/1.1"
-						"user-agent: \"AS:KJCNAS:KDNJC\"";
+	const char* hello1 = "GET /AdGuard/test1.html HTTP/1.1"
+						"user-agent: \"MAX\"";
+	
+	const char* hello2 = "GET /AdGuard/test2.html HTTP/1.1"
+						"user-agent: \"OLEG\"";
 
 	int UUID;
 	std::string sUUID;
@@ -41,11 +44,20 @@ int main(int argc, char* argv[]) {
 	}
 	std::cout << "Connected to HTTP Server\n";
 
-	
-	while(true) {
-		send(Connection, hello, strlen(hello), NULL);
-		Sleep(100);
+	SOCKET Connection2 = socket(AF_INET, SOCK_STREAM, NULL);
+	if (connect(Connection2, (SOCKADDR*)&addr, sizeof(addr)) != 0) {
+		std::cout << "Error: failed connect to server.\n";
+		return 1;
 	}
+	std::cout << "Connected to HTTP Server\n";
+	
+//	while(true) {
+		send(Connection, hello1, strlen(hello1), NULL);
+		//std::cout << "send hello1\n" << std::endl;
+		send(Connection2, hello2, strlen(hello2), NULL);
+
+		//std::cout << "send hello2\n" << std::endl;
+//	}
 
 	system("pause");
 	return 0;
