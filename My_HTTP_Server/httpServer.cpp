@@ -2,6 +2,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <thread>
+#include <utility>
 #include <functional>
 #include "SHA1.h"
 
@@ -109,6 +110,32 @@ httpData httpServer::parseHttpReq(std::array<char, MAX_SIZE>& buf)
     }
 }
 
+std::pair<int, int> httpServer::getHits(
+    std::string user_hash,
+    std::string addr_hash,
+    std::string idstr)
+{
+    int agentHitCount{};
+    int addrHitCount{};
+    std::string agentMapKey = user_hash + idstr;
+    if (agentHit.find("agentMapKey") == agentHit.end()) {
+        agentHitCount = ++agentHit[agentMapKey];
+    }
+    else {
+        agentHit[agentMapKey] = 1;
+        agentHitCount = 1;
+    }
+    std::string addrMapKey = addr_hash + idstr;
+    if (addrHit.find("addrMapKey") == addrHit.end()) {
+        addrHitCount = ++addrHit[addrMapKey];
+    }
+    else {
+        addrHit[addrMapKey] = 1;
+        addrHitCount = 1;
+    }
+    return std::make_pair(agentHitCount, addrHitCount);
+}
+
 void httpServer::process()
 {
     std::array<char, MAX_SIZE> buf{};
@@ -189,22 +216,33 @@ void httpServer::dispatch_thread_handler()
 
             lock.unlock();
             
+            std::ostringstream ss;
+
+            ss << std::this_thread::get_id();
+
+            std::string idstr = ss.str();
             //Ckeck sum of user-agent and address
-            SHA1 head_checksum;
-            SHA1 userAgent_checksum;
-            head_checksum.update(data._head);
-            const std::string head_hash = head_checksum.final();
-            userAgent_checksum.update(data._userAgent);
-            const std::string user_hash = userAgent_checksum.final();
+            SHA1 checksum;
+            //SHA1 request addr
+            checksum.update(data._head);
+            const std::string head_hash = checksum.final();
+            //SHA1 user-agent information 
+            checksum.update(data._userAgent);
+            const std::string user_hash = checksum.final();
+
+            int agentHitCount{};
+            int addrHitCount{};
+            // Ckeck count of addr and user-agent in this thread by adding a idstr to hash value
+            std::tie(agentHitCount, addrHitCount) = getHits(user_hash, head_hash, idstr);
 
             std::cout
-                << '<' << std::this_thread::get_id << '>'
-                << '<' << data._head << '>'
+                << '<' << idstr << '>'
+                << '<' << data._head << '-' << agentHitCount << '>'
                 << '<' << head_hash << '>'
-                << '<' << data._sock_addr << '>'
-                << '<' << data._userAgent << '>'
+                << '<' << data._userAgent << '-' << addrHitCount << '>'
                 << '<' << user_hash << '>'
                 << std::endl;
+            std::cout << idstr << std::endl;
 
             lock.lock();
         }
@@ -216,6 +254,7 @@ httpServer::~httpServer() {
     _quit = true;
     lock.unlock();
     _cv.notify_all();
+
     // Join all active sockets
     for (size_t i = 0; i < _threads.size(); i++)
     {

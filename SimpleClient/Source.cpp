@@ -44,12 +44,12 @@ int main(int argc, char* argv[]) {
 	}
 	std::cout << "Connected to HTTP Server\n";
 
-	SOCKET Connection2 = socket(AF_INET, SOCK_STREAM, NULL);
-	if (connect(Connection2, (SOCKADDR*)&addr, sizeof(addr)) != 0) {
-		std::cout << "Error: failed connect to server.\n";
-		return 1;
-	}
-	std::cout << "Connected to HTTP Server\n";
+	//SOCKET Connection2 = socket(AF_INET, SOCK_STREAM, NULL);
+	//if (connect(Connection2, (SOCKADDR*)&addr, sizeof(addr)) != 0) {
+	//	std::cout << "Error: failed connect to server.\n";
+	//	return 1;
+	//}
+	//std::cout << "Connected to HTTP Server\n";
 	
 //	while(true) {
 		send(Connection, hello1, strlen(hello1), NULL);

@@ -18,6 +18,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <functional>
+#include <unordered_map>
 #include "httpStruct.h"
 
 #define MAX_SIZE 512
@@ -27,12 +28,20 @@ class httpServer
 public:
 
 	explicit httpServer(uint16_t port);
+
 	size_t acceptConnection();
 	size_t mybind();
 	size_t myrecv(std::array<char, MAX_SIZE>& buf);
 	size_t mysend(std::array<char, MAX_SIZE>& buf, size_t len);
 	void sendOK(int sock);
+
 	httpData parseHttpReq(std::array<char, MAX_SIZE>& buf);
+
+	std::pair<int, int> getHits(
+		std::string user_hash,
+		std::string addr_hash,
+		std::string idstr);
+
 	void process();
 
 	void dispatch(const httpData& data);
@@ -41,6 +50,8 @@ public:
 
 	~httpServer();
 private:
+	std::unordered_map <std::string, size_t> agentHit;
+	std::unordered_map <std::string, size_t> addrHit;
 	std::queue<httpData> _q;
 	std::vector<std::thread> _threads;
 	std::mutex _lock;
