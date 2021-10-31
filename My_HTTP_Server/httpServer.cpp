@@ -39,9 +39,9 @@ httpServer::httpServer(uint16_t port) :
         throw std::runtime_error("Failed to listen port");
     }
 
-    //master;
-    //FD_ZERO(&master);
-    //FD_SET(_socket, &master);
+    master;
+    FD_ZERO(&master);
+    FD_SET(_socket, &master);
 }
 
 size_t httpServer::acceptConnection()
@@ -98,7 +98,7 @@ httpData httpServer::parseHttpReq(std::array<char, MAX_SIZE>& buf)
     std::string str(buf.begin(), buf.end());
     // Check if it is GET request
     if (str.substr(0, 3) == "GET") {
-        // Simple example, when we doesn't have anything after user-agend header
+        // Simple example, when we doesn't have anything after user-agent header
         std::string user_agent = str.substr(str.find("user-agent") + 12);
         // Request addr is betwen GET and HTTP/1.1
         auto httpVer = str.find("HTTP/1.1");
@@ -140,45 +140,46 @@ void httpServer::process()
 {
     std::array<char, MAX_SIZE> buf{};
 
-    //while (1) {
-    //    fd_set copy = master;
+    while (1) {
+        fd_set copy = master;
 
-    //    // See who's talking to us
-    //    int socketCount = select(_socket + 1, &copy, nullptr, nullptr, nullptr);
+        // See who's talking to us
+        int socketCount = select(0, &copy, nullptr, nullptr, nullptr);
 
-    //    // Loop through all the current connections / potential connect
-    //    for (int i = 0; i < socketCount; i++)
-    //    { 
-    //        // Makes things easy for us doing this assignment
-    //        SOCKET sock = copy.fd_array[i];
+        // Loop through all the current connections / potential connect
+        for (int i = 0; i < socketCount; i++)
+        { 
+            // Makes things easy for us doing this assignment
+            SOCKET sock = copy.fd_array[i];
 
-    //        // Is it an inbound communication?
-    //        if (sock == _socket)
-    //        {
-    //            _client = waitForConnection();
-    //            myrecv(buf);
-    //            dispatch(parseHttpReq(buf));
-    //        }
-    //        else {
-    //            myrecv(buf);
-    //            dispatch(parseHttpReq(buf));
-    //        }
-    //    }
+            // Is it an inbound communication?
+            //if (sock == _socket)
+            //{
+            //    _client = acceptConnection();
+            //    myrecv(buf);
+            //    dispatch(parseHttpReq(buf));
+            //}
+            //else {
+            _client = acceptConnection();
+                myrecv(buf);
+                dispatch(parseHttpReq(buf));
+            //}
+        }
 
-    //}
+    }
 
     //Wait a socket request to connect
-    while (_client = acceptConnection()) {
-        if (auto len = myrecv(buf); len != 0) {
-            //SEND 200 OK
-            sendOK(_client);
-            //Request handler
-            dispatch(parseHttpReq(buf));
-        }
-        else {
-            break;
-        }
-    }
+    //while (_client = acceptConnection()) {
+    //    if (auto len = myrecv(buf); len != 0) {
+    //        //SEND 200 OK
+    //        sendOK(_client);
+    //        //Request handler
+    //        dispatch(parseHttpReq(buf));
+    //    }
+    //    else {
+    //        break;
+    //    }
+    //}
 }
 
 void httpServer::dispatch(const httpData& data)
