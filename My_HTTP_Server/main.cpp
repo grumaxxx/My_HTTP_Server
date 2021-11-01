@@ -4,8 +4,6 @@
 #include <ws2tcpip.h>
 #include "httpServer.h"
 
-#define WIN32
-
 #ifdef WIN32
 #pragma comment(lib, "Ws2_32.lib")
 #pragma warning(disable: 4996)

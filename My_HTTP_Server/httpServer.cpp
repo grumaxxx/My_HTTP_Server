@@ -116,7 +116,7 @@ std::pair<int, int> httpServer::getHits(
     int agentHitCount{};
     int addrHitCount{};
     std::string agentMapKey = user_hash + idstr;
-    if (agentHit.find("agentMapKey") == agentHit.end()) {
+    if (agentHit.find(agentMapKey) != agentHit.end()) {
         agentHitCount = ++agentHit[agentMapKey];
     }
     else {
@@ -124,7 +124,7 @@ std::pair<int, int> httpServer::getHits(
         agentHitCount = 1;
     }
     std::string addrMapKey = addr_hash + idstr;
-    if (addrHit.find("addrMapKey") == addrHit.end()) {
+    if (addrHit.find(addrMapKey) != addrHit.end()) {
         addrHitCount = ++addrHit[addrMapKey];
     }
     else {
