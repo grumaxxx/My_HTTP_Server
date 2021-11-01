@@ -44,26 +44,24 @@ httpServer::httpServer(uint16_t port) :
     FD_SET(_socket, &master);
 }
 
-size_t httpServer::acceptConnection()
+SOCKET httpServer::acceptConnection() const
 {
-    int newSock = accept(_socket, NULL, 0);
-    if (_client < 0) {
+    SOCKET newSock = accept(_socket, NULL, 0);
+    if (newSock < 0) {
         throw std::runtime_error("Failed to accept port");
     }
     return newSock;
 }
 
-size_t httpServer::mybind()
-{
+int httpServer::mybind() {
 	return bind(
 		_socket,
 		reinterpret_cast<struct sockaddr*>(&_addr),
 		sizeof(_addr)
 	);
 }
-
-// We need to know who was the sender to send info back
-size_t httpServer::myrecv(std::array<char, MAX_SIZE> &buf)
+ 
+int httpServer::myrecv(std::array<char, MAX_SIZE> &buf) const
 {
     return recv(
         _client,
@@ -73,7 +71,7 @@ size_t httpServer::myrecv(std::array<char, MAX_SIZE> &buf)
     );
 }
 
-size_t httpServer::mysend(std::array<char, MAX_SIZE>& buf, size_t len)
+int httpServer::mysend(std::array<char, MAX_SIZE>& buf, size_t len) const
 {
     if (len >= buf.size()) {
         throw std::out_of_range("len >= buf.size()");
@@ -86,13 +84,13 @@ size_t httpServer::mysend(std::array<char, MAX_SIZE>& buf, size_t len)
     );
 }
 
-void httpServer::sendOK(int sock)
+void httpServer::sendOK(int sock) const
 {
     std::string response = "HTTP/1.1 200 OK\r\n";
     send(sock, response.c_str(), response.size(), NULL);
 }
 
-httpData httpServer::parseHttpReq(std::array<char, MAX_SIZE>& buf)
+httpData httpServer::parseHttpReq(std::array<char, MAX_SIZE>& buf) const
 {
     // Create string from array of char
     std::string str(buf.begin(), buf.end());
@@ -140,7 +138,8 @@ void httpServer::process()
 {
     std::array<char, MAX_SIZE> buf{};
 
-    while (1) {
+    bool running = true;
+    while (running) {
         fd_set copy = master;
 
         // See who's talking to us
@@ -152,34 +151,12 @@ void httpServer::process()
             // Makes things easy for us doing this assignment
             SOCKET sock = copy.fd_array[i];
 
-            // Is it an inbound communication?
-            //if (sock == _socket)
-            //{
-            //    _client = acceptConnection();
-            //    myrecv(buf);
-            //    dispatch(parseHttpReq(buf));
-            //}
-            //else {
             _client = acceptConnection();
-                myrecv(buf);
-                dispatch(parseHttpReq(buf));
-            //}
+            myrecv(buf);
+            dispatch(parseHttpReq(buf));
+
         }
-
     }
-
-    //Wait a socket request to connect
-    //while (_client = acceptConnection()) {
-    //    if (auto len = myrecv(buf); len != 0) {
-    //        //SEND 200 OK
-    //        sendOK(_client);
-    //        //Request handler
-    //        dispatch(parseHttpReq(buf));
-    //    }
-    //    else {
-    //        break;
-    //    }
-    //}
 }
 
 void httpServer::dispatch(const httpData& data)

@@ -1,10 +1,13 @@
 #pragma once
 
+#define WIN32
+
 #ifdef WIN32
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #pragma warning(disable: 4996)
 #else
+typedef SOCKET ssize_t
 #include <sys/socket.h>
 #include <netinet/in.h>
 #endif
@@ -29,13 +32,13 @@ public:
 
 	explicit httpServer(uint16_t port);
 
-	size_t acceptConnection();
-	size_t mybind();
-	size_t myrecv(std::array<char, MAX_SIZE>& buf);
-	size_t mysend(std::array<char, MAX_SIZE>& buf, size_t len);
-	void sendOK(int sock);
+	SOCKET acceptConnection() const;
+	int mybind();
+	int myrecv(std::array<char, MAX_SIZE>& buf) const;
+	int mysend(std::array<char, MAX_SIZE>& buf, size_t len) const;
+	void sendOK(int sock) const;
 
-	httpData parseHttpReq(std::array<char, MAX_SIZE>& buf);
+	httpData parseHttpReq(std::array<char, MAX_SIZE>& buf) const;
 
 	std::pair<int, int> getHits(
 		std::string user_hash,

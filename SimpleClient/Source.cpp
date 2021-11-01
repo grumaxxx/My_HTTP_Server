@@ -42,26 +42,19 @@ int main(int argc, char* argv[]) {
 		std::cout << "Error: failed connect to server.\n";
 		return 1;
 	}
-	std::cout << "Connected to HTTP Server\n";
+	std::cout << "Connected to HTTP Server 1 \n";
 
-	//SOCKET Connection2 = socket(AF_INET, SOCK_STREAM, NULL);
-	//if (connect(Connection2, (SOCKADDR*)&addr, sizeof(addr)) != 0) {
-	//	std::cout << "Error: failed connect to server.\n";
-	//	return 1;
-	//}
-	//std::cout << "Connected to HTTP Server\n";
+	SOCKET Connection2 = socket(AF_INET, SOCK_STREAM, NULL);
+	if (connect(Connection2, (SOCKADDR*)&addr, sizeof(addr)) != 0) {
+		std::cout << "Error: failed connect to server.\n";
+		return 1;
+	}
+	std::cout << "Connected to HTTP Server 2 \n";
 	
-//	while(true) {
-		send(Connection, hello1, strlen(hello1), NULL);
-		//std::cout << "send hello1\n" << std::endl;
-		// 
-		//recv(Connection, buff, 512, NULL);
-		Sleep(500);
-		send(Connection, hello2, strlen(hello2), NULL);
-		//send(Connection2, hello2, strlen(hello2), NULL);
+	send(Connection, hello1, strlen(hello1), NULL);
 
-		//std::cout << "send hello2\n" << std::endl;
-//	}
+	Sleep(500);
+	send(Connection2, hello2, strlen(hello2), NULL);
 
 	system("pause");
 	return 0;
